@@ -1,11 +1,12 @@
 package main
 
 import (
-	"encoding/csv"
+	"bufio"
 	"fmt"
 	"log"
 	"net/http"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
 )
@@ -22,10 +23,59 @@ const contentType string = "application/json"
 const userAgent string = "pacbot https://github.com/violetcircus/pacbot"
 
 func main() {
-	message := messageParams{
+	envs := loadEnv()
+	// get user input from terminal for message + channel id
+	channelID, message := getInput()
+	msg := messageParams{
 		apiVersion: 10,
+		token:      envs["TOKEN"],
+		channelID:  channelID,
+		message:    message,
 	}
-	sendMessage(message)
+	sendMessage(msg)
+}
+
+// load envs. doing it this way is dumb: use normal file reading and just string manip the lines into a struct lol
+func loadEnv() map[string]string {
+	f, err := os.Open("./.env")
+	if err != nil {
+		log.Fatal("error reading envs file", err)
+	}
+
+	s := bufio.NewScanner(f)
+	s.Split(bufio.ScanLines)
+
+	envs := make(map[string]string)
+	for s.Scan() {
+		a := strings.Split(s.Text(), "=")
+		envs[a[0]] = a[1]
+	}
+
+	return envs
+}
+
+func getInput() (string, string) {
+	s := bufio.NewScanner(os.Stdin)
+	var buf string
+
+	// get channel id
+	var channelID string
+	fmt.Println("enter channel ID:")
+	s.Scan()
+	buf = s.Text()
+	if len(buf) != 0 {
+		channelID = buf
+	}
+
+	// get message
+	var userMessage string
+	fmt.Println("enter message:")
+	s.Scan()
+	buf = s.Text()
+	if len(buf) != 0 {
+		userMessage = buf
+	}
+	return channelID, userMessage
 }
 
 func sendMessage(msg messageParams) {
