@@ -2,12 +2,13 @@ package main
 
 import (
 	"bufio"
+	"io"
+	// "encoding/json"
 	"fmt"
 	"log"
 	"net/http"
-	"net/url"
 	"os"
-	"strconv"
+	// "strconv"
 	"strings"
 )
 
@@ -16,7 +17,7 @@ type messageParams struct {
 	parameters map[string]string
 	token      string
 	channelID  string
-	message    string
+	content    string
 }
 
 const contentType string = "application/json"
@@ -28,16 +29,17 @@ func main() {
 	channelID, message := getInput()
 	msg := messageParams{
 		apiVersion: 10,
-		token:      envs["TOKEN"],
+		token:      envs["DISCORD_TOKEN"],
 		channelID:  channelID,
-		message:    message,
+		content:    message,
 	}
+	// fmt.Printf("msg: %s \n", msg.content)
 	sendMessage(msg)
 }
 
 // load envs. doing it this way is dumb: use normal file reading and just string manip the lines into a struct lol
 func loadEnv() map[string]string {
-	f, err := os.Open("./.env")
+	f, err := os.Open(".env")
 	if err != nil {
 		log.Fatal("error reading envs file", err)
 	}
@@ -79,23 +81,33 @@ func getInput() (string, string) {
 }
 
 func sendMessage(msg messageParams) {
-	targetUrl := fmt.Sprintf("https://discordapp.com/api/channels/%s/messages", strconv.FormatInt(msg.apiVersion, 10))
+	targetUrl := fmt.Sprintf("https://discordapp.com/api/channels/%s/messages", msg.channelID)
 
-	// assemble params into a suitable format for post request
-	postBody := url.Values{} // creates empty map (std. lib thing for handling URL-encoded form data)
-	for a, b := range msg.parameters {
-		path, err := url.PathUnescape(b) // unescapes value in parameters key:value pair for use in form
-		if err != nil {
-			log.Fatal(err)
-		}
-		postBody.Set(a, path) // adds the key, value pair to the post body with the value now unescaped for use in a form
-	}
-
-	req, error := http.NewRequest("POST", targetUrl, strings.NewReader(postBody.Encode()))
+	payload := fmt.Sprintf("{ \"content\": \"%s\" }", msg.content)
+	req, error := http.NewRequest("POST", targetUrl, strings.NewReader(payload))
 	if error != nil {
 		log.Fatal("request failed lol")
 	}
-	req.Header.Add("Authorization", msg.token)
+	authHeader := fmt.Sprintf("Bot %s", msg.token)
+	req.Header.Add("Authorization", authHeader)
 	req.Header.Add("User-Agent", userAgent)
 	req.Header.Add("Content-Type", contentType)
+
+	// fmt.Println("headers:")
+	// for a, b := range req.Header {
+	// 	fmt.Printf(" %s: %s\n", a, b)
+	// }
+
+	client := http.Client{}
+	res, err := client.Do(req)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer res.Body.Close()
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Printf("discord response: %s", body)
 }
