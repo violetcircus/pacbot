@@ -14,7 +14,6 @@ import (
 
 type messageParams struct {
 	apiVersion int64
-	parameters map[string]string
 	token      string
 	channelID  string
 	content    string
@@ -26,15 +25,18 @@ const userAgent string = "pacbot https://github.com/violetcircus/pacbot"
 func main() {
 	envs := loadEnv()
 	// get user input from terminal for message + channel id
-	channelID, message := getInput()
-	msg := messageParams{
-		apiVersion: 10,
-		token:      envs["DISCORD_TOKEN"],
-		channelID:  channelID,
-		content:    message,
+	channelID := getInput("channel ID:")
+	for {
+		content := getInput("message content:")
+		msg := messageParams{
+			apiVersion: 10,
+			token:      envs["DISCORD_TOKEN"],
+			channelID:  channelID,
+			content:    content,
+		}
+		// fmt.Printf("msg: %s \n", msg.content)
+		sendMessage(msg)
 	}
-	// fmt.Printf("msg: %s \n", msg.content)
-	sendMessage(msg)
 }
 
 // load envs. doing it this way is dumb: use normal file reading and just string manip the lines into a struct lol
@@ -56,28 +58,20 @@ func loadEnv() map[string]string {
 	return envs
 }
 
-func getInput() (string, string) {
+func getInput(prompt string) string {
 	s := bufio.NewScanner(os.Stdin)
 	var buf string
 
-	// get channel id
-	var channelID string
-	fmt.Println("enter channel ID:")
+	fmt.Println(prompt)
 	s.Scan()
 	buf = s.Text()
+	var result string
 	if len(buf) != 0 {
-		channelID = buf
+		result = buf
+	} else {
+		result = "fail"
 	}
-
-	// get message
-	var userMessage string
-	fmt.Println("enter message:")
-	s.Scan()
-	buf = s.Text()
-	if len(buf) != 0 {
-		userMessage = buf
-	}
-	return channelID, userMessage
+	return result
 }
 
 func sendMessage(msg messageParams) {
