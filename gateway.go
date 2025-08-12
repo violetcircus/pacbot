@@ -15,10 +15,7 @@ var upgrader = websocket.Upgrader{
 }
 
 type DiscordGateway struct {
-	conn      *websocket.Conn
-	sequence  int
-	sessionID string
-	ready     bool
+	conn *websocket.Conn
 }
 
 func getGateway() string {
@@ -47,5 +44,4 @@ func newDiscordGateway() (*DiscordGateway, error) {
 	return &DiscordGateway{
 		conn: conn,
 	}, nil
-
 }

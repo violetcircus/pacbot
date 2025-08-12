@@ -2,12 +2,7 @@ package main
 
 import (
 	"bufio"
-	"encoding/json"
-	"fmt"
-	"github.com/gorilla/websocket"
-	"io"
 	"log"
-	"net/http"
 	"os"
 	"strings"
 )
@@ -18,20 +13,8 @@ const (
 	gatewayOptions string = "?v=10&encoding=json"
 )
 
-var upgrader = websocket.Upgrader{
-	ReadBufferSize:  1024,
-	WriteBufferSize: 1024,
-}
-
-type DiscordGateway struct {
-	conn      *websocket.Conn
-	sequence  int
-	sessionID string
-	ready     bool
-}
-
 func main() {
-	// cliMessage()
+	cliMessage()
 }
 
 func loadEnv() map[string]string {
@@ -51,21 +34,4 @@ func loadEnv() map[string]string {
 	}
 
 	return envs
-}
-
-func getGateway() string {
-	type gatewayResponse struct {
-		Url string `json:"url"`
-	}
-
-	resp, err := http.Get("https://discord.com/api/gateway")
-	if err != nil {
-		log.Fatal("error getting gateway URL", err)
-	}
-	defer resp.Body.Close()
-	body, err := io.ReadAll(resp.Body)
-
-	var result gatewayResponse
-	err = json.Unmarshal(body, &result)
-	return fmt.Sprintf("%s/%s", result.Url, gatewayOptions)
 }

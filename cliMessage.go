@@ -52,9 +52,6 @@ func getInput(prompt string) string {
 }
 
 func sendMessage(msg messageParams) {
-	// type payload struct {
-	// 	Content string `json:"content"`
-	// }
 	targetUrl := fmt.Sprintf("https://discordapp.com/api/channels/%s/messages", msg.channelID)
 
 	payload, err := json.Marshal(
@@ -66,6 +63,7 @@ func sendMessage(msg messageParams) {
 	if error != nil {
 		log.Fatal("request failed lol")
 	}
+
 	authHeader := fmt.Sprintf("Bot %s", msg.token)
 	req.Header.Add("Authorization", authHeader)
 	req.Header.Add("User-Agent", userAgent)
